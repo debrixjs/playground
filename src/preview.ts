@@ -101,6 +101,12 @@ function languageToLoader(language: Language | undefined): esbuild.Loader {
     }
 }
 
+function createDocumentString(options: { head?: string | string[], body?: string | string[] }) {
+    const head: string = Array.isArray(options.head) ? options.head.join('\n') : options.head ?? '';
+    const body: string = Array.isArray(options.body) ? options.body.join('\n') : options.body ?? '';
+    return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" />${head}</head><body>${body}</body></html>`;
+}
+
 export function createPreview(
     container: HTMLElement,
     files: VirtualFileManager
@@ -123,7 +129,7 @@ export function createPreview(
         children: [
             wrapper
         ]
-    })
+    });
 
     container.append(previewContainer);
 
@@ -140,6 +146,14 @@ export function createPreview(
 
         await initialized;
 
+        const indexFile = files.find((file) => /^index\.[tj]s$/.test(file.name));
+
+        if (!indexFile) {
+            iframe.srcdoc = createDocumentString({
+                body: '<pre>Could not find index file. Create a file named "index.js" or "index.ts".</pre>'
+            });
+        }
+
         const start = performance.now();
 
         let bundle: esbuild.BuildResult & {
@@ -148,7 +162,7 @@ export function createPreview(
 
         try {
             bundle = await esbuild.build({
-                entryPoints: [files.active.name],
+                entryPoints: [indexFile!.name],
                 bundle: true,
                 write: false,
                 logLevel: 'silent',
@@ -203,7 +217,9 @@ export function createPreview(
         } catch (err) {
             console.clear();
             console.writeln(String(err));
-            iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head><body><pre>${String(err)}</pre></body></html>`;
+            iframe.srcdoc = createDocumentString({
+                body: `<pre>${String(err)}</pre>`
+            });
             return;
         }
 
@@ -227,20 +243,11 @@ export function createPreview(
         ])
 
         const scriptText = bundle.outputFiles[0].text;
-        iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><script defer type="module">${scriptText}</script></head><body></body></html>`;
-
-        (iframe.contentWindow as any).console.error =
-            (iframe.contentWindow as any).console.warn =
-            (iframe.contentWindow as any).console.log = (...data: unknown[]) => {
-                for (let index = 0; index < data.length; index++) {
-                    console.write(String(data[index]));
-
-                    if (index < data.length - 1)
-                        console.write(', ');
-                }
-
-                console.write('\n');
-            };
+        iframe.srcdoc = createDocumentString({
+            head: [
+                `<script defer type="module">${scriptText}</script>`
+            ]
+        });
     }
 
     const updateThrottled = createThrottled(update, 300);
