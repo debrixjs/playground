@@ -1,5 +1,5 @@
 import { MonoEventEmitter } from "./eventemitter";
-import { createDisposible, createRevokable, disposeAll, Disposible, Ext, extname, Revokable, revokeAll } from "./utils";
+import { createRevokable, Disposible, Ext, extname, Revokable, revokeAll } from "./utils";
 
 export type Language = 'javascript' | 'typescript' | 'html' | 'css'
 
