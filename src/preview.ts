@@ -253,7 +253,9 @@ export function createPreview(
     const updateThrottled = createThrottled(update, 300);
 
     const revokables: Revokable[] = [
-        files.onFileEdit(updateThrottled)
+        files.onFileEdit(updateThrottled),
+        files.onFileAdded(updateThrottled),
+        files.onFileRemoved(updateThrottled),
     ];
 
     const idleHandle = requestIdleCallback(update);
