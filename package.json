@@ -1,0 +1,29 @@
+{
+  "name": "playground",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@rollup/pluginutils": "^5.0.2",
+    "typescript": "^4.9.3",
+    "vite": "^3.2.4"
+  },
+  "dependencies": {
+    "@debrix/compiler": "^0.1.0-alpha.8",
+    "@debrix/internal": "^0.1.0-alpha.5",
+    "@vscode/codicons": "^0.0.32",
+    "chalk": "^4.1.2",
+    "debrix": "^0.1.0-alpha.6",
+    "esbuild": "^0.15.15",
+    "esbuild-wasm": "^0.15.15",
+    "monaco-editor": "^0.34.1",
+    "xterm": "^5.0.0",
+    "xterm-addon-fit": "^0.6.0",
+    "xterm-addon-webgl": "^0.13.0"
+  }
+}

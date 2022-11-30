@@ -1,0 +1,82 @@
+.editor-container {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    background: #1e1e1e;
+}
+
+.editor-wrapper {
+    height: calc(100vh - 2rem - 1px);
+}
+
+.file-tabs-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    /* border-bottom: 1px solid #aaa; */
+    background: #1e1e1e;
+    height: 2rem;
+}
+
+.file-tabs-container .controls {
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+}
+
+.file-tabs {
+    display: flex;
+    overflow-x: auto;
+    width: 100%;
+}
+
+.file-tab {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0 0.75rem;
+    cursor: pointer;
+    background: #272727;
+    color: #ccc;
+}
+
+.file-tab.active {
+    background: #232323;
+    color: white;
+}
+
+.file-tab:not(:first-child) {
+    border-left: 1px solid #555;
+}
+
+.file-tab .filename {
+    padding: 0 1rem;
+}
+
+.file-tab .control {
+    padding: 0 .25rem;
+}
+
+.editor-container .control {
+    all: unset;
+    color: #ccc;
+    cursor: pointer;
+}
+
+.editor-container .control:hover,
+.editor-container .control:focus {
+    outline: none;
+    color: #fff;
+}
+
+.file-tab:not(.active) .control {
+    /* Override codicon. */
+    display: none !important;
+}
+
+.file-tab .control.delete:hover,
+.file-tab .control.delete:focus {
+    color: red;
+}
+
+.add-file {
+    justify-self: end;
+}

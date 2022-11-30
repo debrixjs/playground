@@ -1,0 +1,32 @@
+.preview-container {
+    display: grid;
+    grid-template-rows: 1fr auto;
+}
+
+.preview-wrapper>iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.console {
+    height: 33vh;
+}
+
+.console-wrapper {
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+    width: 100%;
+
+    --background: #222222;
+}
+
+.console .xterm {
+    width: 100%;
+    padding: .5rem;
+}
+
+.console:focus-visible {
+    outline: none;
+}
