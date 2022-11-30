@@ -8,12 +8,22 @@ export function createDisposible(dispose: () => void): Disposible {
     return { dispose }
 }
 
+export function disposeAll(disposibles: Disposible[]): void {
+    for (const disposible of disposibles)
+        disposible.dispose();
+}
+
 export interface Revokable {
     revoke(): void
 }
 
 export function createRevokable(revoke: () => void): Revokable {
     return { revoke }
+}
+
+export function revokeAll(revokables: Revokable[]): void {
+    for (const revokable of revokables)
+        revokable.revoke();
 }
 
 export function createThrottled(fn: () => void, delay: number): () => void {

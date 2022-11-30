@@ -1,5 +1,5 @@
 import { MonoEventEmitter } from "./eventemitter";
-import { createRevokable, Disposible, Ext, extname, Revokable } from "./utils";
+import { createDisposible, createRevokable, disposeAll, Disposible, Ext, extname, Revokable, revokeAll } from "./utils";
 
 export type Language = 'javascript' | 'typescript' | 'html' | 'css'
 
@@ -151,60 +151,42 @@ export class VirtualFileSystem implements Disposible {
         return this.#onFileRemoved.on(listener);
     }
 
-    onFileRenamed(listener: (file: VirtualFile, newName: string) => void): Revokable {
-        const revokes: (() => void)[] = [];
+    protected onEachFile(callback: (file: VirtualFile) => Revokable): Revokable {
+        const revokablesMap = new Map<VirtualFile, Revokable>();
+        const revokables: Revokable[] = [
+            this.onFileAdded((file) => {
+                revokablesMap.set(file, callback(file));
+            }),
 
-        for (const file of this.files) {
-            const subscription = file.onRenamed((newName) => listener(file, newName));
-            revokes.push(subscription.revoke);
-        }
+            this.onFileRemoved((file) => {
+                revokablesMap.get(file)!.revoke();
+            }),
+        ];
+
+        for (const file of this.files)
+            revokablesMap.set(file, callback(file));
 
         return createRevokable(() => {
-            for (const revoke of revokes)
-                revoke();
+            revokeAll(revokables);
+            revokeAll(Array.from(revokablesMap.values()));
+            revokablesMap.clear();
         });
+    }
+
+    onFileRenamed(listener: (file: VirtualFile, newName: string) => void): Revokable {
+        return this.onEachFile((file) => file.onRenamed((newName) => listener(file, newName)));
     }
 
     onFileLanguageChanged(listener: (file: VirtualFile, newLanguage: Language | undefined) => void): Revokable {
-        const revokes: (() => void)[] = [];
-
-        for (const file of this.files) {
-            const subscription = file.onLanguageChange((newLanguage) => listener(file, newLanguage));
-            revokes.push(subscription.revoke);
-        }
-
-        return createRevokable(() => {
-            for (const revoke of revokes)
-                revoke();
-        });
+        return this.onEachFile((file) => file.onLanguageChange((newLanguage) => listener(file, newLanguage)));
     }
 
     onFileEdit(listener: (file: VirtualFile, newContent: string) => void): Revokable {
-        const revokes: (() => void)[] = [];
-
-        for (const file of this.files) {
-            const subscription = file.onEdit((newContent) => listener(file, newContent));
-            revokes.push(subscription.revoke);
-        }
-
-        return createRevokable(() => {
-            for (const revoke of revokes)
-                revoke();
-        });
+        return this.onEachFile((file) => file.onEdit((newContent) => listener(file, newContent)));
     }
 
     onFileVisibilityChange(listener: (file: VirtualFile, hidden: boolean) => void): Revokable {
-        const revokes: (() => void)[] = [];
-
-        for (const file of this.files) {
-            const subscription = file.onVisibilityChange((hidden) => listener(file, hidden));
-            revokes.push(subscription.revoke);
-        }
-
-        return createRevokable(() => {
-            for (const revoke of revokes)
-                revoke();
-        });
+        return this.onEachFile((file) => file.onVisibilityChange((hidden) => listener(file, hidden)));
     }
 
     dispose() {
