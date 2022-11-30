@@ -216,6 +216,7 @@ function createEditorInner(
     const revokables: Revokable[] = [
         files.onActiveFileChanged((activeFile) => {
             editor.setModel(getActiveModel(activeFile));
+            editor.focus();
         }),
 
         files.onFileAdded((file) => {
