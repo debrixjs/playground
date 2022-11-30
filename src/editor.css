@@ -4,8 +4,13 @@
     background: #1e1e1e;
 }
 
+/*
+monaco editor will, before resizes, be beigger than the wrapper.
+To ensure the size of the editor, a "fixed" wrapper size it set.
+*/
 .editor-wrapper {
     height: calc(100vh - 2rem - 1px);
+    width: 50vw;
 }
 
 .file-tabs-container {
