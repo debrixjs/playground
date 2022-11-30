@@ -105,9 +105,16 @@ export function createPreview(
     container: HTMLElement,
     files: VirtualFileManager
 ): Disposible {
+    const iframe = createElement({
+        tag: 'iframe'
+    });
+
     const wrapper = createElement({
         tag: 'div',
-        class: 'preview-wrapper'
+        class: 'preview-wrapper',
+        children: [
+            iframe
+        ]
     });
 
     const previewContainer = createElement({
@@ -126,24 +133,6 @@ export function createPreview(
         wasmURL,
         worker: true
     });
-
-    function createIframe() {
-        return createElement({
-            tag: 'iframe',
-            callback(element) {
-                wrapper.replaceChildren(element);
-            },
-        });
-    }
-
-    function createScript(scriptText: string) {
-        return createElement({
-            tag: 'script',
-            callback(element) {
-                element.text = scriptText;
-            },
-        })
-    }
 
     async function update() {
         if (files.active === null)
@@ -214,7 +203,7 @@ export function createPreview(
         } catch (err) {
             console.clear();
             console.writeln(String(err));
-            createIframe();
+            iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /></head><body><pre>${String(err)}</pre></body></html>`;
             return;
         }
 
@@ -238,10 +227,7 @@ export function createPreview(
         ])
 
         const scriptText = bundle.outputFiles[0].text;
-
-        const iframe = createIframe();
-        const script = createScript(scriptText);
-        iframe.contentDocument!.body.appendChild(script);
+        iframe.srcdoc = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><script defer type="module">${scriptText}</script></head><body></body></html>`;
 
         (iframe.contentWindow as any).console.error =
             (iframe.contentWindow as any).console.warn =
@@ -264,7 +250,7 @@ export function createPreview(
     ];
 
     const idleHandle = requestIdleCallback(update);
-    createIframe().contentDocument!.body.innerText = 'Loading...';
+    iframe.srcdoc = 'Loading...';
 
     return createDisposible(() => {
         for (const revokable of revokables)
