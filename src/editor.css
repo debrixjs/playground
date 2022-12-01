@@ -56,14 +56,12 @@ To ensure the size of the editor, a "fixed" wrapper size it set.
     padding: 0 1rem;
 }
 
-.file-tab .control {
-    padding: 0 .25rem;
-}
-
 .editor-container .control {
     all: unset;
+    display: block;
     color: #ccc;
     cursor: pointer;
+    padding: 0 .25rem;
 }
 
 .editor-container .control:hover,
