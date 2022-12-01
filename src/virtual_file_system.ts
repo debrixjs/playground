@@ -2,25 +2,57 @@ import { MonoEventEmitter } from "./eventemitter";
 import { createRevokable, Disposible, Ext, extname, Revokable, revokeAll } from "./utils";
 
 export type Language = 'javascript' | 'typescript' | 'html' | 'css'
+const LANGUAGES: string[] = ['javascript', 'typescript', 'html', 'css'];
+
+export type JSONVersion = 0;
+const JSONVersion: JSONVersion = 0;
+
+export interface VirtualFileJSON {
+    version: JSONVersion
+    name: string
+    content: string
+    language?: string
+}
+
+export interface VirtualFileSystemJSON {
+    version: JSONVersion
+    files: VirtualFileJSON[]
+}
+
+export function isValidLanguage(language: string): language is Language {
+    return LANGUAGES.includes(language);
+}
+
+export function extToLanguage(ext: Ext | undefined): Language | undefined {
+    switch (ext) {
+        case '.js':
+            return 'javascript';
+
+        case '.ts':
+            return 'typescript';
+
+        case '.ix':
+            return 'html'; // debrix
+
+        case '.css':
+            return 'css';
+
+        default:
+            return undefined;
+    }
+}
 
 export class VirtualFile implements Disposible {
-    static extToLanguage(ext: Ext | undefined): Language | undefined {
-        switch (ext) {
-            case '.js':
-                return 'javascript';
-
-            case '.ts':
-                return 'typescript';
-
-            case '.ix':
-                return 'html'; // debrix
-
-            case '.css':
-                return 'css';
-
-            default:
-                return undefined;
-        }
+    static isValidJSON(value: unknown): value is VirtualFileSystemJSON {
+        return value !== null && typeof value === 'object' && 'version' in value && value.version === JSONVersion;
+    }
+    
+    static fromJSON(json: VirtualFileJSON) {
+        return new VirtualFile(
+            json.name,
+            json.content,
+            json.language && isValidLanguage(json.language) ? json.language : undefined
+        );
     }
 
     private _name: string;
@@ -50,7 +82,7 @@ export class VirtualFile implements Disposible {
 
     _language: Language | undefined;
     get language() {
-        return this._language ?? VirtualFile.extToLanguage(this.ext);
+        return this._language ?? extToLanguage(this.ext);
     }
 
     set language(newLanguage: Language | undefined) {
@@ -83,6 +115,15 @@ export class VirtualFile implements Disposible {
         return this.#onEdit.on(listener);
     }
 
+    toJSON(): VirtualFileJSON {
+        return {
+            version: JSONVersion,
+            name: this.name,
+            content: this.content,
+            ...this._language && { language: this._language },
+        }
+    }
+
     dispose() {
         this.#onRename.dispose();
         this.#onLanguageChange.dispose();
@@ -91,6 +132,16 @@ export class VirtualFile implements Disposible {
 }
 
 export class VirtualFileSystem implements Disposible {
+    static isValidJSON(value: unknown): value is VirtualFileSystemJSON {
+        return value !== null && typeof value === 'object' && 'version' in value && value.version === JSONVersion;
+    }
+
+    static fromJSON(json: VirtualFileSystemJSON) {
+        return new VirtualFileSystem(
+            json.files.map(json => VirtualFile.fromJSON(json))
+        );
+    }
+
     protected files: Set<VirtualFile>;
 
     constructor(files?: VirtualFile[]) {
@@ -165,6 +216,13 @@ export class VirtualFileSystem implements Disposible {
 
     onFileEdit(listener: (file: VirtualFile, newContent: string) => void): Revokable {
         return this.onEachFile((file) => file.onEdit((newContent) => listener(file, newContent)));
+    }
+
+    toJSON(): VirtualFileSystemJSON {
+        return {
+            version: JSONVersion,
+            files: Array.from(this.files).map(file => file.toJSON())
+        }
     }
 
     dispose() {

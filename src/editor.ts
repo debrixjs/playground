@@ -1,8 +1,9 @@
 import './editor.css';
 import * as monaco from 'monaco-editor';
-import { computeClass, createDisposible, createElement, createText, Disposible, Revokable } from './utils';
+import { computeClass, createDisposible, createElement, createRevokable, createText, Disposible, randomId, Revokable, revokeAll, searchParams, setSearchParams } from './utils';
 import { Language, VirtualFile } from './virtual_file_system';
 import { VirtualFileManager } from './virtual_file_manager';
+import { client } from './supabase';
 
 window.MonacoEnvironment = {
     async getWorker(_workerId, label) {
@@ -117,7 +118,7 @@ function createTab(container: HTMLElement, files: VirtualFileManager, file: Virt
     });
 }
 
-function createTabManager(container: HTMLElement, files: VirtualFileManager): Disposible {
+function createTabManager(container: HTMLElement, files: VirtualFileManager, save: () => void): Disposible {
     const tabsContainer = createElement({
         tag: 'div',
         class: 'file-tabs',
@@ -133,6 +134,13 @@ function createTabManager(container: HTMLElement, files: VirtualFileManager): Di
                     tag: 'div',
                     class: 'controls',
                     children: [
+                        createElement({
+                            tag: 'button',
+                            class: 'control add-file codicon codicon-save',
+                            on: {
+                                click: save,
+                            },
+                        }),
                         createElement({
                             tag: 'button',
                             class: 'control add-file codicon codicon-file-add',
@@ -158,7 +166,7 @@ function createTabManager(container: HTMLElement, files: VirtualFileManager): Di
 
     const revokables: Revokable[] = [
         files.onFileAdded((file) => {
-                tabs.set(file, createTab(tabsContainer, files, file));
+            tabs.set(file, createTab(tabsContainer, files, file));
         }),
         files.onFileRemoved((file) => {
             tabs.get(file)!.dispose();
@@ -255,7 +263,7 @@ function createEditorInner(
                 languageToMonacoLanguage(file.language)
             );
             models.set(file, newModel);
-        }),
+        })
     ];
 
     return createDisposible(() => {
@@ -274,13 +282,50 @@ export function createEditor(
     });
     container.append(editorContainer);
 
+    const saveProject = async () => {
+        const projectId = randomId();
+        const response = await client.storage
+            .from('projects')
+            .upload(projectId, JSON.stringify(files.toJSON()), {
+                cacheControl: 'no-cache',
+                contentType: 'application/json;charset=UTF-8',
+                upsert: true
+            });
+
+        if (response.error) {
+            alert('Failed to save project. See browser console.');
+            return;
+        }
+
+        searchParams.set('id', projectId);
+        setSearchParams();
+    };
+
     const disposibles: Disposible[] = [
-        createTabManager(editorContainer, files),
+        createTabManager(editorContainer, files, saveProject),
         createEditorInner(editorContainer, files),
+    ];
+
+    const revokables: Revokable[] = [
+        (() => {
+            const listener = (event: KeyboardEvent) => {
+                if (event.ctrlKey && event.code === 'KeyS') {
+                    event.preventDefault();
+                    saveProject();
+                }
+            };
+
+            window.addEventListener('keydown', listener);
+            return createRevokable(() => {
+                window.addEventListener('keydown', listener);
+            });
+        })(),
     ];
 
     return createDisposible(() => {
         for (const disposible of disposibles)
             disposible.dispose();
+
+        revokeAll(revokables);
     })
 }

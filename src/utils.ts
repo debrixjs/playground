@@ -1,5 +1,13 @@
 export type Ext = `.${string}`;
 
+export const searchParams = new URLSearchParams(location.search);
+
+export function setSearchParams(): void {
+    const url = new URL(location.href);
+    url.search = searchParams.toString();
+    window.history.pushState({ path: url.pathname.toString() }, '', url.toString());
+}
+
 export interface Disposible {
     dispose(): void
 }
@@ -24,6 +32,16 @@ export function createRevokable(revoke: () => void): Revokable {
 export function revokeAll(revokables: Revokable[]): void {
     for (const revokable of revokables)
         revokable.revoke();
+}
+
+export function randomInt(min = 0, max = 1): number {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function randomId(length = 8): string {
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+    const chars = alphabet + alphabet.toUpperCase() + '0123456789';
+    return Array.from({ length }, () => chars[randomInt(0, chars.length)]).join('');
 }
 
 export function createThrottled(fn: () => void, delay: number): () => void {
