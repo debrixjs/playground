@@ -153,13 +153,11 @@ function createTabManager(container: HTMLElement, files: VirtualFileManager): Di
 
     const tabs = new Map<VirtualFile, Disposible>(
         Array.from(files.all())
-            .filter(file => !file.hidden)
             .map(file => [file, createTab(tabsContainer, files, file)])
     );
 
     const revokables: Revokable[] = [
         files.onFileAdded((file) => {
-            if (!file.hidden)
                 tabs.set(file, createTab(tabsContainer, files, file));
         }),
         files.onFileRemoved((file) => {

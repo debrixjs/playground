@@ -44,16 +44,6 @@ export class VirtualFile implements Disposible {
         this.#onEdit.emit(newContent);
     }
 
-
-    private _hidden: boolean;
-    public get hidden(): boolean {
-        return this._hidden;
-    }
-    public set hidden(value: boolean) {
-        this._hidden = value;
-        this.#onVisibilityChange.emit(value);
-    }
-
     get ext() {
         return extname(this.name);
     }
@@ -71,13 +61,11 @@ export class VirtualFile implements Disposible {
     constructor(
         name: string,
         content: string | null,
-        language?: Language,
-        hidden?: boolean
+        language?: Language
     ) {
         this._name = name;
         this._content = content ?? '';
         this._language = language;
-        this._hidden = hidden ?? false;
     }
 
     #onRename = new MonoEventEmitter<[string]>();
@@ -95,16 +83,10 @@ export class VirtualFile implements Disposible {
         return this.#onEdit.on(listener);
     }
 
-    #onVisibilityChange = new MonoEventEmitter<[boolean]>();
-    onVisibilityChange(listener: (hidden: boolean) => void) {
-        return this.#onVisibilityChange.on(listener);
-    }
-
     dispose() {
         this.#onRename.dispose();
         this.#onLanguageChange.dispose();
         this.#onEdit.dispose();
-        this.#onVisibilityChange.dispose();
     }
 }
 
@@ -183,10 +165,6 @@ export class VirtualFileSystem implements Disposible {
 
     onFileEdit(listener: (file: VirtualFile, newContent: string) => void): Revokable {
         return this.onEachFile((file) => file.onEdit((newContent) => listener(file, newContent)));
-    }
-
-    onFileVisibilityChange(listener: (file: VirtualFile, hidden: boolean) => void): Revokable {
-        return this.onEachFile((file) => file.onVisibilityChange((hidden) => listener(file, hidden)));
     }
 
     dispose() {

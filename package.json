@@ -15,10 +15,8 @@
   },
   "dependencies": {
     "@debrix/compiler": "^0.1.0-alpha.8",
-    "@debrix/internal": "^0.1.0-alpha.5",
     "@vscode/codicons": "^0.0.32",
     "chalk": "^4.1.2",
-    "debrix": "^0.1.0-alpha.6",
     "esbuild": "^0.15.15",
     "esbuild-wasm": "^0.15.15",
     "monaco-editor": "^0.34.1",

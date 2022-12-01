@@ -101,6 +101,16 @@ function languageToLoader(language: Language | undefined): esbuild.Loader {
     }
 }
 
+function contentTypeToLoader(contentType: string | null): esbuild.Loader {
+    switch (contentType?.split(';')[0]) {
+        case 'application/javascript':
+            return 'js';
+
+        default:
+            return 'default';
+    }
+}
+
 function createDocumentString(options: { head?: string | string[], body?: string | string[] }) {
     const head: string = Array.isArray(options.head) ? options.head.join('\n') : options.head ?? '';
     const body: string = Array.isArray(options.body) ? options.body.join('\n') : options.body ?? '';
@@ -171,6 +181,20 @@ export function createPreview(
                         name: 'debrix',
                         setup(build) {
                             build.onResolve({ filter: /./ }, (args) => {
+                                if (args.importer.startsWith('http://') || args.importer.startsWith('https://') || args.path === '@debrix/internal') {
+                                    return {
+                                        path: new URL(args.path, 'https://cdn.skypack.dev').toString(),
+                                        namespace: 'uri'
+                                    }
+                                }
+
+                                if (args.path.startsWith('http://') || args.path.startsWith('https://')) {
+                                    return {
+                                        path: args.path,
+                                        namespace: 'uri'
+                                    }
+                                }
+
                                 return {
                                     path: args.path,
                                     namespace: 'virtual'
@@ -209,6 +233,20 @@ export function createPreview(
                                     contents,
                                     loader
                                 };
+                            });
+
+                            build.onLoad({ filter: /./, namespace: 'uri' }, async (args) => {
+                                const response = await fetch(args.path, {
+                                    cache: 'no-cache'
+                                });
+
+                                const contents = await response.text();
+                                const loader = contentTypeToLoader(response.headers.get('content-type'));
+
+                                return {
+                                    contents,
+                                    loader
+                                }
                             });
                         },
                     }

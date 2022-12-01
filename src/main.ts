@@ -9,13 +9,7 @@ import { VirtualFile } from './virtual_file_system';
 import { createElement } from './utils';
 
 const files = new VirtualFileManager(
-  Object.entries(preset.files)
-    .map((args) => new VirtualFile(
-      args[0],
-      args[1].content,
-      args[1].language,
-      args[1].hidden
-    ))
+  Object.entries(preset.files).map((args) => new VirtualFile(...args))
 );
 
 files.active = files.find(file => file.name === preset.index);
