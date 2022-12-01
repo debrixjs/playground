@@ -12,11 +12,11 @@ import { client } from './supabase';
 async function getFileManager() {
   if (searchParams.has('id')) {
     const projectId = searchParams.get('id')!;
-  
+
     const response = await client.storage
       .from('projects')
       .download(projectId);
-  
+
     if (response.error) {
       alert('Failed to load saved project!');
       searchParams.delete('id');
@@ -24,7 +24,7 @@ async function getFileManager() {
     } else {
       const content = await response.data.arrayBuffer();
       const decoder = new TextDecoder('utf-8');
-  
+
       const json = JSON.parse(decoder.decode(content)) as unknown;
 
       if (VirtualFileManager.isValidJSON(json))
@@ -37,11 +37,15 @@ async function getFileManager() {
   );
 }
 
-const files = await getFileManager();
-files.active = files.find(file => file.name === preset.index);
+async function main() {
+  const files = await getFileManager();
+  files.active = files.find(file => file.name === preset.index);
 
-const container = createElement({ tag: 'main' });
-document.body.append(container);
+  const container = createElement({ tag: 'main' });
+  document.body.append(container);
 
-createEditor(container, files);
-createPreview(container, files);
+  createEditor(container, files);
+  createPreview(container, files);
+}
+
+main();
