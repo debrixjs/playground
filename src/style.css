@@ -1,7 +1,6 @@
 :root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-size: 16px;
-  line-height: 24px;
   font-weight: 400;
 
   font-synthesis: none;
@@ -9,6 +8,28 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+
+  --background: #1e1e1e;
+
+  --primary-bg: #0e639c;
+  --primary-color: #ffffff;
+  --primary-bg-active: #1177bb;
+
+  --secondary-bg: #3a3d41;
+  --secondary-border: #65656d;
+  --secondary-color: #ffffff;
+  --secondary-bg-active: #45494e;
+
+  --error-bg: #f14c4c;
+  --error-color: #be1100;
+  --warning-bg: #cca700;
+  --warning-color: #b89500;
+  --info-bg: #3794ff;
+  --info-color: #007acc;
+
+  --link-color: #3794ff;
 }
 
 * {
@@ -23,6 +44,11 @@ body {
 body {
   margin: 0;
   overflow: hidden;
+  background: var(--background);
+}
+
+.hidden {
+  display: none !important;
 }
 
 main {
@@ -33,4 +59,81 @@ main {
 main>* {
   height: 100%;
   width: 50%;
+}
+
+a {
+  color: var(--link-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+input {
+  border-radius: 2px;
+  padding: .5rem;
+  margin: .25rem .5rem;
+  color: var(--secondary-color);
+  border: none;
+  outline: 1px solid var(--secondary-border);
+  background: var(--secondary-bg);
+}
+
+button {
+  cursor: pointer;
+}
+
+button.primary,
+button.secondary {
+  border: none;
+  border-radius: 2px;
+  width: fit-content;
+  padding: .5rem 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: .25rem .5rem;
+}
+
+button.primary {
+  color: var(--primary-color);
+  background: var(--primary-bg);
+}
+
+button.primary:hover {
+  background: var(--primary-bg-active);
+}
+
+button.secondary {
+  color: var(--secondary-color);
+  background: var(--secondary-bg);
+}
+
+button.secondary:hover {
+  background: var(--secondary-bg-active);
+}
+
+*:focus {
+  outline: 1px solid #007fd4;
+}
+
+button {
+  outline-offset: 2px;
+}
+
+.action:focus {
+  outline-offset: -1px;
+}
+
+.action {
+  display: block;
+  background: none;
+  border: none;
+  color: inherit;
+  padding: 3px;
+  border-radius: 5px;
+}
+
+.action:not(.disabled):hover {
+  background-color: rgba(90, 93, 94, 0.31);
 }
