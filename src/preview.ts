@@ -90,14 +90,12 @@ async function createPreviewInner(
         files.onFileRemoved(updateThrottled),
     ];
 
-    const idleHandle = requestIdleCallback(update);
     iframe.srcdoc = 'Loading...';
+    update();
 
     return createDisposible(() => {
         for (const revokable of revokables)
             revokable.revoke();
-
-        cancelIdleCallback(idleHandle);
     });
 }
 
