@@ -46,6 +46,21 @@ async function main() {
 
   createEditor(container, files);
   createPreview(container, files);
+
+  document.body.append(
+    createElement({
+      tag: 'iframe',
+      class: "gh-star",
+      attr: {
+        src: "https://ghbtns.com/github-btn.html?user=debrixjs&repo=debrix&type=star&count=true",
+        frameborder: "0",
+        scrolling: "0",
+        width: "100",
+        height: "20",
+        title: "GitHub Stargazers",
+      }
+    })
+  );
 }
 
 main();
