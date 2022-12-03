@@ -102,3 +102,17 @@ export function computeClass(...classes: (string | undefined | null | false)[]) 
 export function createText(text?: string): Text {
     return document.createTextNode(text ?? '');
 }
+
+export function hideElement(element: HTMLElement): void {
+    element.setAttribute('aria-hidden', 'true');
+    element.classList.add('hidden');
+}
+
+export function showElement(element: HTMLElement): void {
+    element.setAttribute('aria-hidden', 'false');
+    element.classList.remove('hidden');
+}
+
+export function isElementHidden(element: HTMLElement): boolean {
+    return element.getAttribute('aria-hidden') === 'false' || element.classList.contains('hidden');
+}

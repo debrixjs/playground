@@ -1,7 +1,6 @@
 .editor-container {
     display: grid;
     grid-template-rows: auto 1fr;
-    background: #1e1e1e;
 }
 
 /*
@@ -53,7 +52,13 @@ To ensure the size of the editor, a "fixed" wrapper size it set.
 }
 
 .file-tab .filename {
+    display: flex;
     padding: 0 1rem;
+}
+
+.file-tab .filename .dirty {
+    font-size: 14px;
+    color: var(--warning-bg);
 }
 
 .editor-container .control {
@@ -65,8 +70,7 @@ To ensure the size of the editor, a "fixed" wrapper size it set.
 }
 
 .editor-container .control:hover,
-.editor-container .control:focus {
-    outline: none;
+.editor-container .control:active {
     color: #fff;
 }
 
@@ -76,8 +80,8 @@ To ensure the size of the editor, a "fixed" wrapper size it set.
 }
 
 .file-tab .control.delete:hover,
-.file-tab .control.delete:focus {
-    color: red;
+.file-tab .control.delete:active {
+    color: var(--error-color);
 }
 
 .add-file {

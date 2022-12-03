@@ -1,6 +1,7 @@
 .preview-container {
     display: grid;
     grid-template-rows: 1fr auto;
+    background: #ffffff;
 }
 
 .preview-wrapper>iframe {

@@ -1,9 +1,9 @@
 import './editor.css';
 import * as monaco from 'monaco-editor';
-import { computeClass, createDisposible, createElement, createRevokable, createText, Disposible, randomId, Revokable, revokeAll, searchParams, setSearchParams } from './utils';
+import { computeClass, createDisposible, createElement, createText, Disposible, hideElement, Revokable, showElement } from './utils';
 import { Language, VirtualFile } from './virtual_file_system';
-import { VirtualFileManager } from './virtual_file_manager';
-import { client } from './supabase';
+import { Project } from './project';
+import { confirm, prompt } from './popup';
 
 window.MonacoEnvironment = {
     async getWorker(_workerId, label) {
@@ -47,20 +47,33 @@ function languageToMonacoLanguage(language: Language | undefined): string | unde
     return language;
 }
 
-function createTab(container: HTMLElement, files: VirtualFileManager, file: VirtualFile): Disposible {
+function createTab(container: HTMLElement, project: Project, file: VirtualFile): Disposible {
     const filename = createText(file.name);
+    const dirty = createElement({
+        tag: 'i',
+        class: 'dirty hidden',
+        attr: {
+            'aria-hidden': 'true',
+            title: 'File is dirty (modified)'
+        },
+        children: [
+            createText('*')
+        ]
+    });
+
     const element = createElement({
         tag: 'div',
-        class: computeClass('file-tab', files.active === file && 'active'),
+        class: computeClass('file-tab', project.files.active === file && 'active'),
         on: {
-            click: () => files.active = file
+            click: () => project.files.active = file
         },
         children: [
             createElement({
                 tag: 'span',
                 class: 'filename',
                 children: [
-                    filename
+                    filename,
+                    dirty
                 ],
             }),
             createElement({
@@ -70,26 +83,34 @@ function createTab(container: HTMLElement, files: VirtualFileManager, file: Virt
                     title: 'Rename file'
                 },
                 on: {
-                    click: () => {
-                        const newName = prompt('Enter new filename:', file.name);
+                    click: async () => {
+                        const response = await prompt({
+                            header: 'Enter new filename',
+                            text: `You are renaming '${file.name}'. Enter the new name for this file.`,
+                            input: file.name
+                        });
 
-                        if (newName)
-                            file.name = newName;
+                        if (response.choise === 'primary' && response.input)
+                            file.name = response.input;
                     },
                 },
             }),
             createElement({
                 tag: 'button',
-                class: 'control delete codicon codicon-close',
+                class: 'control delete codicon codicon-trash',
                 attr: {
                     title: 'Delete file'
                 },
                 on: {
-                    click: () => {
-                        const verification = confirm(`Are you sure you want to delete '${file.name}'?`);
+                    click: async () => {
+                        const verification = await confirm({
+                            header: 'Delete file',
+                            text: `Are you sure you want to delete '${file.name}'? You cannot undo this action.`,
+                            primary: 'Delete'
+                        });
 
                         if (verification)
-                            files.removeFile(file, true);
+                        project.files.removeFile(file, true);
                     },
                 },
             }),
@@ -102,12 +123,18 @@ function createTab(container: HTMLElement, files: VirtualFileManager, file: Virt
         file.onRenamed((newName) => {
             filename.textContent = newName;
         }),
-        files.onActiveFileChanged((activeFile) => {
+        project.files.onActiveFileChanged((activeFile) => {
             if (activeFile === file)
                 element.classList.add('active');
             else if (element.classList.contains('active'))
                 element.classList.remove('active');
         }),
+        project.onDirtyChange((isDirty, dirtyFile) => {
+            if (!isDirty)
+                hideElement(dirty);
+            else if (dirtyFile === file)
+                showElement(dirty);
+        })
     ];
 
     return createDisposible(() => {
@@ -118,7 +145,10 @@ function createTab(container: HTMLElement, files: VirtualFileManager, file: Virt
     });
 }
 
-function createTabManager(container: HTMLElement, files: VirtualFileManager, save: () => void): Disposible {
+function createTabManager(
+    container: HTMLElement,
+    project: Project
+): Disposible {
     const tabsContainer = createElement({
         tag: 'div',
         class: 'file-tabs',
@@ -136,20 +166,49 @@ function createTabManager(container: HTMLElement, files: VirtualFileManager, sav
                     children: [
                         createElement({
                             tag: 'button',
-                            class: 'control add-file codicon codicon-save',
+                            class: 'control codicon codicon-link',
+                            attr: {
+                                title: 'Share permalink to project (ctrl+shift+s).'
+                            },
                             on: {
-                                click: save,
+                                click: () => project.share(),
                             },
                         }),
                         createElement({
                             tag: 'button',
-                            class: 'control add-file codicon codicon-file-add',
+                            class: 'control codicon codicon-gist-fork',
+                            attr: {
+                                title: 'Fork project (ctrl+alt+s).'
+                            },
                             on: {
-                                click: () => {
-                                    const filename = prompt('Enter filename: ');
+                                click: () => project.fork(),
+                            },
+                        }),
+                        createElement({
+                            tag: 'button',
+                            class: 'control codicon codicon-cloud-upload',
+                            attr: {
+                                title: 'Save project (ctrl+s).'
+                            },
+                            on: {
+                                click: () => project.save(),
+                            },
+                        }),
+                        createElement({
+                            tag: 'button',
+                            class: 'control codicon codicon-file-add',
+                            attr: {
+                                title: 'Create new file.'
+                            },
+                            on: {
+                                click: async () => {
+                                    const response = await prompt({
+                                        header: 'Enter new filename',
+                                        input: true
+                                    });
 
-                                    if (filename)
-                                        files.addFile(new VirtualFile(filename, null));
+                                    if (response.choise === 'primary' && response.input)
+                                        project.files.addFile(new VirtualFile(response.input, null));
                                 },
                             },
                         }),
@@ -160,15 +219,15 @@ function createTabManager(container: HTMLElement, files: VirtualFileManager, sav
     );
 
     const tabs = new Map<VirtualFile, Disposible>(
-        Array.from(files.all())
-            .map(file => [file, createTab(tabsContainer, files, file)])
+        Array.from(project.files.all())
+            .map(file => [file, createTab(tabsContainer, project, file)])
     );
 
     const revokables: Revokable[] = [
-        files.onFileAdded((file) => {
-            tabs.set(file, createTab(tabsContainer, files, file));
+        project.files.onFileAdded((file) => {
+            tabs.set(file, createTab(tabsContainer, project, file));
         }),
-        files.onFileRemoved((file) => {
+        project.files.onFileRemoved((file) => {
             tabs.get(file)!.dispose();
             tabs.delete(file);
         })
@@ -182,7 +241,7 @@ function createTabManager(container: HTMLElement, files: VirtualFileManager, sav
 
 function createEditorInner(
     container: HTMLElement,
-    files: VirtualFileManager
+    project: Project
 ): Disposible {
     const wrapper = createElement({
         tag: 'div',
@@ -192,7 +251,7 @@ function createEditorInner(
     container.append(wrapper);
 
     const models = new Map<VirtualFile, monaco.editor.ITextModel>(
-        Array.from(files.all()).map(file => [
+        Array.from(project.files.all()).map(file => [
             file,
             monaco.editor.createModel(
                 file.content,
@@ -201,31 +260,32 @@ function createEditorInner(
         ])
     );
 
-    function getActiveModel(activeFile = files.active): monaco.editor.ITextModel | null {
+    function getActiveModel(activeFile = project.files.active): monaco.editor.ITextModel | null {
         return activeFile ? models.get(activeFile)! : null;
     }
 
     const editor = monaco.editor.create(wrapper, {
         automaticLayout: true,
         model: getActiveModel(),
-        theme: 'vs-dark'
+        theme: 'vs-dark',
+        readOnly: project.readonly
     });
 
     editor.onDidChangeModelContent(() => {
-        if (files.active) {
+        if (project.files.active) {
             cancelNextEditEvent = true;
-            files.active.content = editor.getValue();
+            project.files.active.content = editor.getValue();
         }
     });
 
     let cancelNextEditEvent = false;
     const revokables: Revokable[] = [
-        files.onActiveFileChanged((activeFile) => {
+        project.files.onActiveFileChanged((activeFile) => {
             editor.setModel(getActiveModel(activeFile));
             editor.focus();
         }),
 
-        files.onFileAdded((file) => {
+        project.files.onFileAdded((file) => {
             if (!models.has(file)) {
                 const model = monaco.editor.createModel(
                     file.content,
@@ -235,7 +295,7 @@ function createEditorInner(
             }
         }),
 
-        files.onFileRemoved((file, disposed) => {
+        project.files.onFileRemoved((file, disposed) => {
             if (disposed) {
                 const model = models.get(file)!;
                 model.dispose();
@@ -243,7 +303,7 @@ function createEditorInner(
             }
         }),
 
-        files.onFileEdit((file, newContent) => {
+        project.files.onFileEdit((file, newContent) => {
             if (cancelNextEditEvent) {
                 cancelNextEditEvent = false;
                 return;
@@ -253,7 +313,7 @@ function createEditorInner(
             model.setValue(newContent);
         }),
 
-        files.onFileLanguageChanged((file) => {
+        project.files.onFileLanguageChanged((file) => {
             const oldModel = models.get(file)!;
             oldModel.dispose();
             models.delete(file);
@@ -263,6 +323,10 @@ function createEditorInner(
                 languageToMonacoLanguage(file.language)
             );
             models.set(file, newModel);
+        }),
+
+        project.onReadonlyChange((readOnly) => {
+            editor.updateOptions({ readOnly });
         })
     ];
 
@@ -274,7 +338,7 @@ function createEditorInner(
 
 export function createEditor(
     container: HTMLElement,
-    files: VirtualFileManager
+    project: Project
 ): Disposible {
     const editorContainer = createElement({
         tag: 'div',
@@ -282,50 +346,13 @@ export function createEditor(
     });
     container.append(editorContainer);
 
-    const saveProject = async () => {
-        const projectId = randomId();
-        const response = await client.storage
-            .from('projects')
-            .upload(projectId, JSON.stringify(files.toJSON()), {
-                cacheControl: 'no-cache',
-                contentType: 'application/json;charset=UTF-8',
-                upsert: true
-            });
-
-        if (response.error) {
-            alert('Failed to save project. See browser console.');
-            return;
-        }
-
-        searchParams.set('id', projectId);
-        setSearchParams();
-    };
-
     const disposibles: Disposible[] = [
-        createTabManager(editorContainer, files, saveProject),
-        createEditorInner(editorContainer, files),
-    ];
-
-    const revokables: Revokable[] = [
-        (() => {
-            const listener = (event: KeyboardEvent) => {
-                if (event.ctrlKey && event.code === 'KeyS') {
-                    event.preventDefault();
-                    saveProject();
-                }
-            };
-
-            window.addEventListener('keydown', listener);
-            return createRevokable(() => {
-                window.addEventListener('keydown', listener);
-            });
-        })(),
+        createTabManager(editorContainer, project),
+        createEditorInner(editorContainer, project),
     ];
 
     return createDisposible(() => {
         for (const disposible of disposibles)
             disposible.dispose();
-
-        revokeAll(revokables);
     })
 }
