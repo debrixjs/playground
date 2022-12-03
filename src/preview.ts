@@ -52,8 +52,6 @@ async function createPreviewInner(
             await import('./build')
         ]);
 
-        const start = performance.now();
-
         let result: BuildResult;
 
         try {
@@ -68,12 +66,10 @@ async function createPreviewInner(
         }
 
         window.dispatchEvent(new Event('buildfinished'));
-
-        const end = performance.now();
         console.clear();
 
         if (result.errors.length === 0 && result.warnings.length === 0)
-            console.writeln(`Build finished in ${Math.floor(end - start)}ms!`);
+            console.writeln(`Build finished in ${Math.floor(result.timeMs)}ms!`);
 
         iframe.srcdoc = createDocumentString({
             head: [

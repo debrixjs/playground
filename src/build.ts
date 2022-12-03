@@ -51,10 +51,13 @@ export interface BuildResult {
     bundle: string
     errors: string[]
     warnings: string[]
+    timeMs: number
 }
 
 export async function build(index: string, files: VirtualFileSystem): Promise<BuildResult> {
     await initialize();
+
+    const startMs = performance.now();
 
     const result = await esbuild.build({
         entryPoints: [index],
@@ -138,6 +141,9 @@ export async function build(index: string, files: VirtualFileSystem): Promise<Bu
         ]
     });
 
+    const endMs = performance.now();
+    const timeMs = endMs - startMs;
+
     const [errors, warnings] = await Promise.all([
         esbuild.formatMessages(result.errors, { kind: 'error', color: true }),
         esbuild.formatMessages(result.warnings, { kind: 'error', color: true }),
@@ -146,6 +152,7 @@ export async function build(index: string, files: VirtualFileSystem): Promise<Bu
     return {
         bundle: result.outputFiles[0].text,
         warnings,
-        errors
+        errors,
+        timeMs
     }
 }
