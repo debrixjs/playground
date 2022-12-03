@@ -28,11 +28,15 @@ const loader = createElement({
 document.body.append(loader);
 
 function unitToMs(string: string): number {
-    const match = /^([0-9]+)([a-z]+)/.exec(string)?.slice(1);
+    const match = /^((?:[0-9]*\.)?[0-9]+)([a-z]+)$/.exec(string)?.slice(1);
     if (!match)
         throw new Error(`Cannot parse '${string}'.`);
 
-    const [value, unit] = match;
+    let [value, unit] = match;
+
+    if (value.startsWith('.'))
+        value = '0' + value;
+
     switch (unit) {
         case 'ms':
             return parseFloat(value);
