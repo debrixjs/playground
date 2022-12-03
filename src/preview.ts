@@ -12,7 +12,6 @@ import wasmURL from 'esbuild-wasm/esbuild.wasm?url';
 import { Terminal as XTerm } from 'xterm';
 import { WebglAddon as XTermWebglAddon } from 'xterm-addon-webgl'
 import { FitAddon as XTermFitAddon } from 'xterm-addon-fit'
-import chalk from 'chalk';
 
 interface PreviewConsole extends Disposible {
     write(data: string | Uint8Array): void
@@ -265,18 +264,18 @@ export function createPreview(
         console.clear();
 
         if (bundle.errors.length === 0 && bundle.warnings.length === 0)
-            console.writeln(chalk.greenBright(`Build finished in ${Math.floor(end - start)}ms!`));
+            console.writeln(`Build finished in ${Math.floor(end - start)}ms!`);
 
         await Promise.all([
             (async () => {
                 const lines = await esbuild.formatMessages(bundle.errors, { kind: 'error', color: false });
                 if (lines.length)
-                    console.writeln(chalk.red(lines.join('\n')));
+                    console.writeln(lines.join('\n'));
             })(),
             (async () => {
                 const lines = await esbuild.formatMessages(bundle.warnings, { kind: 'warning', color: false });
                 if (lines.length)
-                    console.writeln(chalk.yellow(lines.join('\n')));
+                    console.writeln(lines.join('\n'));
             })(),
         ])
 
