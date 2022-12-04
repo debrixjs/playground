@@ -9,13 +9,14 @@ let _initialize: Promise<void> | undefined;
 export function initialize(): Promise<void> {
     if (_initialize)
         return _initialize;
-    
-    return _initialize = (async () => {
-        await esbuild.initialize({
+
+    return _initialize = Promise.all([
+        esbuild.initialize({
             wasmURL,
             worker: true
-        });
-    })();
+        }),
+        debrix.initialize()
+    ]) as Promise<any>;
 }
 
 function languageToLoader(language: Language | undefined): esbuild.Loader {
