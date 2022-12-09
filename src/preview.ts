@@ -63,9 +63,10 @@ async function createPreviewInner(
                 body: `<pre>${String(err)}</pre>`
             });
             return;
+        } finally {
+            window.dispatchEvent(new Event('buildfinished'));
         }
 
-        window.dispatchEvent(new Event('buildfinished'));
         console.clear();
 
         if (result.errors.length === 0 && result.warnings.length === 0)
