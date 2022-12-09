@@ -1,12 +1,12 @@
 export const index = 'index.js';
 
-const DEBRIX_VERSION = '0.1.0-alpha.6';
+const DEBRIX_VERSION = '0.1.0-alpha.7';
 
 export const files: { readonly [_ in string]: string } = {
   // - index.js -
   [index]: `import Main from 'main.ix';
 
-new Main().attach(document.body);
+new Main().insert(document.body);
 `,
 
   // - main.ix -
